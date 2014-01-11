@@ -19,9 +19,7 @@ node.default['afw']['tables']['mangle']['chains'] = []
 node.default['afw']['tables']['nat']['rules'] = []
 node.default['afw']['tables']['nat']['chains'] = []
 
-class Chef::Recipe
-  include AFW
-end
+
 
 package 'iptables'
 
@@ -36,13 +34,20 @@ elsif node['afw']['ruby_source'] == 'package'
   end
 end
 
-node.default['afw']['rules'] ||= {}
-node['afw']['rules'].each do |name,params|
-  Chef::Log.info("AFW: processing rule '#{name}'")
-  if process_rule(node, name, params)
-    Chef::Log.info("AFW: finished processing of rule '#{name}'")
-  else
-    Chef::Log.info("AFW: rule '#{name}' failed. Skipping it.")
+ruby_block "process rules" do
+  block do
+    class Chef::Recipe
+      include AFW
+    end
+    node.default['afw']['rules'] ||= {}
+    node['afw']['rules'].each do |name,params|
+      Chef::Log.info("AFW: processing rule '#{name}'")
+      if AFW::process_rule(node, name, params)
+        Chef::Log.info("AFW: finished processing of rule '#{name}'")
+      else
+        Chef::Log.info("AFW: rule '#{name}' failed. Skipping it.")
+      end
+    end
   end
 end
 
